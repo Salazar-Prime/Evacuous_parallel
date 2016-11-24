@@ -16,15 +16,15 @@ def global_assignment(params):
     scale_rule1 = params.scale_rule1
 
 
-def next_state(cars):
+def next_state(cars, grid, cell_width, cell_height, grid_width, grid_height):
     #print "next_state"
-    new_position(cars)
+    new_position(cars, grid, cell_width, cell_height)
     # disabling handle collision for now
     # handle_collision(cars)
-    update_velocity(cars)
+    update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height)
     #print "frame over"
 
-def new_position(cars):
+def new_position(cars, grid, cell_width, cell_height):
     # update the position of the car with the current
     #print "next_position"
     i = 0
@@ -40,7 +40,7 @@ def new_position(cars):
         distance_to_node = sub((cars[i].next_junction.x, cars[i].next_junction.y), (cars[i].x, cars[i].y))
 
         if magnitude(projection(distance_to_node, cars[i].cur_road.vector)) > magnitude(speed):  # distanceToNode > speed
-            cars[i].x, cars[i].y = cars[i].x + speed[0], cars[i].y + speed[1]
+            newx, newy = cars[i].x + speed[0], cars[i].y + speed[1]
         else:
             if cars[i].next_junction.is_exit:
                 to_remove = cars.pop(i)
@@ -48,8 +48,14 @@ def new_position(cars):
                 to_remove.delete()
                 continue
             p = projection(distance_to_node, cars[i].cur_road.vector)
-            cars[i].x, cars[i].y = cars[i].x + p[0], cars[i].y + p[1]
+            newx, newy = cars[i].x + p[0], cars[i].y + p[1]
             at_junction(cars[i]) # updating the next node the car moves towards
+        oldgrid = int(cars[i].x/cell_width), int(cars[i].y/cell_height)
+        cars[i].x, cars[i].y = newx, newy
+        newgrid = int(newx/cell_width), int(newy/cell_height)
+        if oldgrid != newgrid:
+            grid[oldgrid].remove(cars[i])
+            grid[newgrid].append(cars[i])
         i += 1
 
 
@@ -137,7 +143,7 @@ def handle_collision(cars):
             car_to_move.y = y
 
 
-def update_velocity(cars):
+def update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height):
     # update the velocity vector of each car for next frame
     #print "update_velocity"
     total_cars = len(cars)
@@ -151,9 +157,10 @@ def update_velocity(cars):
                 car1.vx, car1.vy = sub((car1.next_junction.x, car1.next_junction.y), (car1.x, car1.y))
                 continue
         # checking only for different cars
-        for j in range(total_cars):
-            car2 = cars[j]
-            if i == j:
+        gridx, gridy = int(car1.x/cell_width), int(car1.x/cell_height)
+        neigh_cells = matrix_neighbors(gridx, gridy, grid_width, grid_height)
+        for car2 in sum((grid[n] for n in neigh_cells), []):
+            if car1 is car2:
                 continue
 
             # Rule1: Alignment - Other cars influence the velocity of the car in consideration

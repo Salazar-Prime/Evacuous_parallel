@@ -54,3 +54,7 @@ def calc_y_on_circle(a,b,x,separation):
 def dist(a, b):
     """Calculate the euclidian distance between two points"""
     return math.sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2))
+
+def matrix_neighbors(x, y, width, height):
+    """Returns the cells neighboring(inclusive) to (x,y) in a matrix of dimenstion (width, height)"""
+    return [(x+i, y+j) for i in (-1,0,1) for j in (-1,0,1) if 0<=x+i<width and 0<=y+j<height]
