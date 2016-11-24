@@ -51,7 +51,7 @@ params = ParameterSet(separation=5, communication_radius=10, scale_rule1=0.01, e
 global_assignment(params)
 
 """Setting up GUI"""
-GRAPHICS = True
+GRAPHICS = False
 
 # creating window
 if GRAPHICS:
@@ -74,6 +74,8 @@ def on_draw():
         #print car.car_id,car.vx,car.vy
 
 def update(dt):
+    if not GRAPHICS:
+        print "Cars left to exit:" + str(len(cars))
     global frame_counter
     frame_counter += 1
     if GRAPHICS:
