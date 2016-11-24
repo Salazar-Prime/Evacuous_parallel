@@ -53,11 +53,21 @@ global_assignment(params)
 """Setting up GUI"""
 GRAPHICS = True
 
+WINWIDTH, WINHEIGHT = 1300, 700
 # creating window
 if GRAPHICS:
-    WINWIDTH, WINHEIGHT = 1300, 700
     game_window = pyglet.window.Window(WINWIDTH, WINHEIGHT)
 
+cell_width, cell_height = 100, 100
+grid_width, grid_height = WINWIDTH/cell_width + 1, WINHEIGHT/cell_height + 1
+# initialize grid with each cell empty
+grid = {(i,j):[] for i in range(grid_width) for j in range(grid_height)}
+
+# add cars to grid
+#print grid.keys()
+for car in cars:
+    gridx, gridy = int(car.x/cell_width), int(car.y/cell_height)
+    grid[(gridx, gridy)].append(car)
 # Drawing the labels
 #@game_window.event  # lets the Window instance know that on_draw() is an event handler
 def on_draw():
@@ -67,7 +77,7 @@ def on_draw():
     if not cars:
         print "exiting"
         pyglet.app.exit()
-    next_state(cars)
+    next_state(cars, grid, cell_width, cell_height, grid_width, grid_height)
     roadsbatch.draw()
     for car in cars:
         pass
@@ -82,7 +92,7 @@ def update(dt):
     if not cars:
         print "exiting"
         pyglet.app.exit()
-    next_state(cars)
+    next_state(cars, grid, cell_width, cell_height, grid_width, grid_height)
 
 
 pyglet.clock.schedule_interval(update, 1/1000.0)
