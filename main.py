@@ -16,35 +16,38 @@ simple_junctions = [Junction(100, 0, junction_id=0, is_exit=True),
                     Junction(330, 100, junction_id=8),
                     Junction(110, 100, junction_id=9),
                     Junction(0, 150, junction_id=10, is_exit=True),
-                   	Junction(200, 700, junction_id=11, is_exit=True),
-                   	Junction(1000, 300, junction_id=12),
-                   	Junction(1300, 300, junction_id=13, is_exit=True),
-                   	Junction(800, 100, junction_id=14),
-                   	Junction(1000, 100, junction_id=15),
-                   	Junction(1000, 700, junction_id=16, is_exit=True),
-                   	Junction(500, 700, junction_id=17, is_exit=True),
-                   	Junction(500, 600, junction_id=18),
-                   	Junction(700, 600, junction_id=19),
-                   	Junction(900, 500, junction_id=20),
-                   	Junction(900, 300, junction_id=21)
-                   	]
+                    Junction(200, 700, junction_id=11, is_exit=True),
+                    Junction(1000, 300, junction_id=12),
+                    Junction(1300, 300, junction_id=13, is_exit=True),
+                    Junction(800, 100, junction_id=14),
+                    Junction(1000, 100, junction_id=15),
+                    Junction(1000, 700, junction_id=16, is_exit=True),
+                    Junction(500, 700, junction_id=17, is_exit=True),
+                    Junction(500, 600, junction_id=18),
+                    Junction(700, 600, junction_id=19),
+                    Junction(900, 500, junction_id=20),
+                    Junction(900, 300, junction_id=21)
+                    ]
 # def add_junction(i,j): # adds a node between 2 existing nodes
 
 
 # road_conn = [(0, 9), (9, 1), (1, 2), (1, 5), (9, 8), (5, 8), (7, 5), (8, 6), (5, 3), (3, 4)]
-road_conn = [(0, 9), (9, 1), (1, 2), (1, 5), (9, 8), (5, 8), (7, 5), (8, 6), (5, 3), (3, 4), (9,10), (7,11), (4,21), (21,12), (12,13), (4,14), (14,8) , (12,15), (14,15),(12,16), (3, 18), (18,17), (18,19), (19,20), (20,21)]
+road_conn = [(0, 9), (9, 1), (1, 2), (1, 5), (9, 8), (5, 8), (7, 5), (8, 6),
+             (5, 3), (3, 4), (9, 10), (7, 11), (4, 21), (21, 12), (12, 13),
+             (4, 14), (14, 8), (12, 15), (14, 15), (12, 16), (3, 18),
+             (18, 17), (18, 19), (19, 20), (20, 21)]
 simple_roads = []
 roadsbatch = pyglet.graphics.Batch()
 for start, end in road_conn:
     cur_road = Road(simple_junctions[start], simple_junctions[end], batch=roadsbatch)
-    #print cur_road.length
+    # print cur_road.length
     simple_roads.append(cur_road)
     simple_junctions[start].add_road(cur_road)
     simple_junctions[end].add_road(cur_road)
 
 curmap = Map(simple_junctions, simple_roads)
 carsbatch = pyglet.graphics.Batch()
-cars = load.init_random_cars(curmap, 100, carsbatch, seed=None)
+cars = load.init_random_cars(curmap, 1000, carsbatch, seed=123)
 
 # initialize a parameter set
 params = ParameterSet(separation=5, communication_radius=10, scale_rule1=0.01, exit_communication_radius=10)
@@ -61,7 +64,7 @@ if GRAPHICS:
 cell_width, cell_height = 100, 100
 grid_width, grid_height = WINWIDTH/cell_width + 1, WINHEIGHT/cell_height + 1
 # initialize grid with each cell empty
-grid = {(i,j):[] for i in range(grid_width) for j in range(grid_height)}
+grid = {(i, j): [] for i in range(grid_width) for j in range(grid_height)}
 
 # add cars to grid
 #print grid.keys()
@@ -97,10 +100,10 @@ def update(dt):
     next_state(cars, grid, cell_width, cell_height, grid_width, grid_height)
 
 
-pyglet.clock.schedule_interval(update, 1/1000.0)
+#pyglet.clock.schedule_interval(update, 1/1000.0)
 frame_counter = 0
 t = time()
-if __name__ == "__main__":
-    pyglet.app.run()
+#if __name__ == "__main__":
+#    pyglet.app.run()
 print "time taken", time()-t
 print "frames taken", frame_counter

@@ -89,6 +89,8 @@ class Car(pyglet.sprite.Sprite):
         vx, vy = v
         self.velocity = self.vx, self.vy = min(Car.MAX_VEL, self.vx + vx), min(Car.MAX_VEL, self.vy + vy)
 
+    def __repr__(self):
+        return "<Car at ({:.2},{:.2}) with ({:.2},{:.2})>".format(self.x, self.y, self.vx, self.vy)
 
 class ParameterSet(dict):
     def __init__(self,**kw):

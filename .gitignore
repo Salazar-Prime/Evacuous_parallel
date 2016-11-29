@@ -41,3 +41,5 @@ crashlytics-build.properties
 fabric.properties
 
 *.pyc
+
+.idea/*
