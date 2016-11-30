@@ -56,7 +56,13 @@ params = ParameterSet(separation=5, communication_radius=10, scale_rule1=0.01, e
 global_assignment(params)
 
 """Setting up GUI"""
-GRAPHICS = True
+
+GRAPHICS = False
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-g":
+            GRAPHICS = True
 
 WINWIDTH, WINHEIGHT = 1300, 700
 # creating window
