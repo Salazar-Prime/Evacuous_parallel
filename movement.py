@@ -2,6 +2,7 @@ from util.objects import Car, Junction, Road
 import random
 from util.functions import *
 from graphics.draw_frame import on_road
+from task2 import task2
 
 # total_cars = 50;
 separation, exit_communication_radius, communication_radius, scale_rule1 = 0, 0, 0, 0
@@ -21,7 +22,8 @@ def next_state(cars, grid, cell_width, cell_height, grid_width, grid_height):
     new_position(cars, grid, cell_width, cell_height)
     # disabling handle collision for now
     # handle_collision(cars)
-    update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height)
+    # update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height)
+    parallel_update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height)
     #print "frame over"
 
 def new_position(cars, grid, cell_width, cell_height):
@@ -173,3 +175,10 @@ def update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height
             # car1.vx, car1.vy = add((car1.vx, car1.vy), scale(velo_add_rule1, scale_rule1))
             car1.add_velocity(scale(velo_add_rule1, scale_rule1))
 
+def parallel_update_velocity(cars, grid, cell_width, cell_height, grid_width, grid_height):
+    task2(grid, grid_width, grid_height, scale_rule1)
+    for car in cars:
+        if car.next_junction.is_exit:
+            if dist((car.x, car.y), (car.next_junction.x, car.next_junction.y)) < exit_communication_radius:
+                car.vx, car.vy = sub((car.next_junction.x, car.next_junction.y), (car.x, car.y))
+                continue

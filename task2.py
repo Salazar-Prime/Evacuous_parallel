@@ -1,97 +1,65 @@
+
+from transfer import task1
 import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 import pycuda.gpuarray as gpuarray
 import numpy as np
 
+
 import util
 from util.objects import *
-from util import load
 from graphics.draw_frame import *
 import pyglet
 
-mod = SourceModule("""
-    typedef struct Lists {
-        int datalen, __padding;
-        float *xptr;
-        float *yptr;
-    } List;
+sourcestr = """
+    #define GRIDWIDTH {0}
+    #define GRIDHEIGHT {1}
 
-
-    __global__ void task1(List *l, float* xsums, float *ysums)
-    {
+    __global__ void task2(float* xsums, float *ysums, float* xsums_out, float *ysums_out)
+    {{
         int cellx = blockIdx.x;
-        int caridx = threadIdx.x;
-        //if (cellx < 6) {
-            if (caridx < l[cellx].datalen) {
-                 atomicAdd(&xsums[cellx], l[cellx].xptr[caridx]);
-                 atomicAdd(&ysums[cellx], l[cellx].yptr[caridx]);
-                //atomicAdd(&xsums[1], 1);
-            }
-        //}
-    }
-    """)
+        int tid = threadIdx.x;
+        if (tid < 9) {{
+            int xoff = tid%3 - 1;
+            int yoff = tid/3 - 1;
+            int x = cellx%GRIDWIDTH;
+            int y = cellx/GRIDWIDTH;
+            if (x + xoff >= 0 && x+xoff < GRIDWIDTH && y+yoff >= 0 && y+yoff < GRIDHEIGHT) {{
+                int flatx = (x+xoff)+GRIDWIDTH*(y+yoff);
+                atomicAdd(&xsums_out[cellx], xsums[flatx]);
+                atomicAdd(&ysums_out[cellx], ysums[flatx]);
+            }}
+        }}
+    }}
+    """
 
 
-class List():
-    int_size = 8
-    ptr_size = np.intp(0).nbytes
-    mem_size = int_size + 2 * ptr_size
-
-    def __init__(self, arr, list_ptr):
-        int_sz, ptr_sz = List.int_size, List.ptr_size
-        self.x_ptr = cuda.to_device(arr[0])
-        self.y_ptr = cuda.to_device(arr[1])
-        self.dtype = arr.dtype
-        self.shape = arr[0].shape
-        cuda.memcpy_htod(int(list_ptr), np.getbuffer(np.int32(arr.size / 2)))
-        cuda.memcpy_htod(int(list_ptr) + int_sz, np.getbuffer(np.intp(int(self.x_ptr))))
-        cuda.memcpy_htod(int(list_ptr) + int_sz + ptr_sz, np.getbuffer(np.intp(int(self.y_ptr))))
-
-    def __repr__(self):
-        return "{}\n{}".format(cuda.from_device(self.x_ptr, self.shape, self.dtype),
-                               cuda.from_device(self.y_ptr, self.shape, self.dtype))
-
-    def __str__(self):
-        return repr(self)
-
-
-def grid2list(grid, grid_width, grid_height):
-    grid_size = grid_width*grid_height
-    list_ptr = cuda.mem_alloc(List.mem_size*grid_size)
-    for y in range(grid_height):
-        for x in range(grid_width):
-            cur_idx = y*grid_width + x
-            cur_ptr = int(list_ptr) + cur_idx*List.mem_size
-            cur_cell = grid[(x, y)]
-            if cur_cell:
-                vel = np.empty( (2, len(cur_cell)), dtype=np.float32 )
-                vel[0] = [car.vx for car in cur_cell]
-                vel[1] = [car.vy for car in cur_cell]
-            else:
-                print "found empty cell", x, y
-                vel = np.zeros( (2, 1), dtype=np.float32 )
-            # print vel
-            l = List(vel, cur_ptr)
-            print "from device",x, y, "\n", l
-    return list_ptr
-
-def task1(grid, grid_width, grid_height):
-    list_ptr = grid2list(grid, grid_width, grid_height)
-    grid_size = grid_width*grid_height
+def task2(grid, grid_width, grid_height, scaling):
+    mod = SourceModule(sourcestr.format(grid_width, grid_height))
+    xsum_ptr, ysum_ptr, res_xsum, res_ysum= task1(grid, grid_width, grid_height)
+    print "task 1 xsum", res_xsum
+    print "task 1 ysum", res_ysum
+    grid_size = grid_width * grid_height
     shp = (grid_size,)
     typ = np.float32
-    xsum_ptr = cuda.to_device( np.zeros(shp, dtype=typ) )
-    ysum_ptr = cuda.to_device( np.zeros(shp, dtype=typ) )
-    print "xsum initialized to ", cuda.from_device(xsum_ptr, shp, typ)
-    print "ysum initialized to ", cuda.from_device(ysum_ptr, shp, typ)
-    func = mod.get_function("task1")
-    func(list_ptr, xsum_ptr, ysum_ptr, grid=(grid_size,1,1), block=(32,1,1))
+    xsum_out_ptr = cuda.to_device(np.zeros(shp, dtype=typ))
+    ysum_out_ptr = cuda.to_device(np.zeros(shp, dtype=typ))
+    func = mod.get_function("task2")
+    func(xsum_ptr, ysum_ptr, xsum_out_ptr, ysum_out_ptr, grid=(grid_size, 1, 1), block=(1024,1,1))
     pycuda.autoinit.context.synchronize()
-    res_xsum = cuda.from_device(xsum_ptr, shp, typ)
-    res_ysum = cuda.from_device(ysum_ptr, shp, typ)
-    #xsum_ptr.free(), ysum_ptr.free()
-    return xsum_ptr, ysum_ptr, res_xsum, res_ysum
+    res_xsum = cuda.from_device(xsum_out_ptr, shp, typ)
+    res_ysum = cuda.from_device(ysum_out_ptr, shp, typ)
+    for y in range(grid_height):
+        for x in range(grid_width):
+            cur_avgx, cur_avgy = res_xsum[x+y*grid_width], res_ysum[x+y*grid_width]
+            for car in grid[(x,y)]:
+                # car.vx = -car.vx
+                # car.vy = -car.vy
+                # car.vx += cur_avgx
+                # car.vy += cur_avgy
+                car.add_velocity( scale((cur_avgx, cur_avgy), scaling) )
+
 
 if __name__ == "__main__":
     simple_junctions = [Junction(100, 0, junction_id=0, is_exit=True),
@@ -138,8 +106,8 @@ if __name__ == "__main__":
     carsbatch = pyglet.graphics.Batch()
     cars = util.load.init_random_cars(curmap, 15, carsbatch, seed=123)
     for i,car in enumerate(cars):
-        car.vx = i
-        car.vy = -i
+        car.vx = float(i)
+        car.vy = float(-i)
     WINWIDTH, WINHEIGHT = 1500, 1000
     cell_width, cell_height = 500, 500
     grid_width, grid_height = WINWIDTH / cell_width, WINHEIGHT / cell_height
@@ -153,5 +121,15 @@ if __name__ == "__main__":
         #grid[(gridx, gridy)].append(car)
         p = i/3
         grid[(p%3, p/3)].append(car)
-    _, _, xsum, ysum = task1(grid, grid_width, grid_height)
-    print xsum, ysum
+    print "-"*80 + "\nbefore"
+    for k in grid:
+        print "in cell", k
+        for car in grid[k]:
+            print "car id", car.car_id, "velocity:", car.vx, car.vy
+    print "-"*80
+    task2(grid, grid_width, grid_height, 1.0)
+    print "-"*80 + "\nafter"
+    for k in grid:
+        print "in cell", k
+        for car in grid[k]:
+            print "car id", car.car_id, "velocity:", car.vx, car.vy
