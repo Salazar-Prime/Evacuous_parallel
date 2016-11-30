@@ -5,6 +5,8 @@ import pyglet
 from movement import next_state, global_assignment
 from time import time
 
+import sys, os
+
 simple_junctions = [Junction(100, 0, junction_id=0, is_exit=True),
                     Junction(130, 310, junction_id=1),
                     Junction(0, 500, junction_id=2, is_exit=True),
@@ -54,7 +56,7 @@ params = ParameterSet(separation=5, communication_radius=10, scale_rule1=0.01, e
 global_assignment(params)
 
 """Setting up GUI"""
-GRAPHICS = False
+GRAPHICS = True
 
 WINWIDTH, WINHEIGHT = 1300, 700
 # creating window
@@ -97,13 +99,15 @@ def update(dt):
     if not cars:
         print "exiting"
         pyglet.app.exit()
+    sys.stdout = open(os.devnull, "w")
     next_state(cars, grid, cell_width, cell_height, grid_width, grid_height)
+    sys.stdout = sys.__stdout__
 
 
-#pyglet.clock.schedule_interval(update, 1/1000.0)
+pyglet.clock.schedule_interval(update, 1/1000.0)
 frame_counter = 0
 t = time()
-#if __name__ == "__main__":
-#    pyglet.app.run()
+if __name__ == "__main__":
+   pyglet.app.run()
 print "time taken", time()-t
 print "frames taken", frame_counter
