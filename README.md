@@ -4,7 +4,7 @@ Note: This project is the parallelized version of [Project Evacuous](https://git
 
 ## Authors
 * [Varun Aggarwal](https://github.com/Salazar-Prime/)
-* [Arvind Roshaan](https://github.com/Arvind-Roshaan-S)
+* [Arvind Roshaan](https://github.com/ararosh)
 * [P.R.Vaidyanathan](https://github.com/aditya95sriram)
 
 ## Dependencies
